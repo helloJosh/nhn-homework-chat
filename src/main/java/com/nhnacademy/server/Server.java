@@ -52,18 +52,22 @@ public class Server implements Runnable{
     public void setMessage_id(long message_id) {
         this.message_id = message_id;
     }
+
     @Override
     public void run(){
+        // 설정 파일 불러오기
         ConfigurationForm configurationInitForm = JsonFileUtility.jsonFileLoad();
         clientIdList = JsonFileUtility.deepCopy(configurationInitForm.getClientIdList());
         denyClientIdList = JsonFileUtility.deepCopy(configurationInitForm.getClientIdList());
         connect = JsonFileUtility.deepCopy(configurationInitForm.getConnect());
         disconnect = JsonFileUtility.deepCopy(configurationInitForm.getDisconnect());
 
-        Thread userInputHandler = new Thread(()->{
+        // 서버 관리 컨트롤러
+        Thread userInputController = new Thread(()->{
             try(BufferedReader input = new BufferedReader(new InputStreamReader(System.in))){
                 String line;
                 while((line=input.readLine())!=null){
+                    // client_list
                     if(line.equals("client_list")){        
                         System.out.println("=======Client List=======");
                         for(long l : clientIdList){
@@ -72,6 +76,7 @@ public class Server implements Runnable{
                         System.out.println();
                         logger.trace("Server client list call");
                     }
+                    // deny add client_id 
                     if(line.matches("deny\\s+add\\s+\\d")){
                         String[] words = line.split(" ");
                         denyClientIdList.add(Long.parseLong(words[2]));
@@ -81,6 +86,7 @@ public class Server implements Runnable{
                         configurationForm.getDenyClientIdList().add(Long.parseLong(words[2]));
                         JsonFileUtility.jsonFileSave(configurationForm);
                     }
+                    // deny del client_id
                     if(line.matches("deny\\s+del\\s+\\d")){
                         String[] words = line.split(" ");
                         denyClientIdList.remove(Long.parseLong(words[2]));
@@ -90,19 +96,23 @@ public class Server implements Runnable{
                         configurationForm.getDenyClientIdList().remove(Long.parseLong(words[2]));
                         JsonFileUtility.jsonFileSave(configurationForm);
                     }
+                    // monitor on
                     if(line.matches("monitor\\s+on")){
                         this.monitor = true;
                         logger.trace("Server message monitor on");
                     }
+                    // monitor on
                     if(line.matches("monitor\\s+off")){
                         this.monitor = false;
                         logger.trace("Server message monitor off");
                     }
+                    // send_off
                     if(line.equals("send_off\\s+\\d")){
                         String[] words = line.split(" ");
                         clientRepository.findById(Long.parseLong(words[2])).closeSocket();
                         logger.trace("Server client {} send off ", words[2]);
                     }
+                    // log show s n
                     if(line.equals("log\\s+show\\s+[\\d]\\s+[\\d]")){
                         String[] words = line.split(" ");
                         List<String> logs = LogFileUtility.readLogFile();
@@ -140,13 +150,16 @@ public class Server implements Runnable{
 
         });
 
-        Thread clientInputHandler = new Thread(()->{
+        // Client 입력 컨트롤러
+        Thread clientInputController = new Thread(()->{
             while(!Thread.currentThread().isInterrupted()){
                 synchronized(netcatList){
                     for(Netcat netcat : netcatList){
                         if(!netcat.isReceiveQueueEmpty()){
                             try{
                                 String line = netcat.receive();
+                                
+                                // connection request 처리
                                 if(line.matches("\\{\"id\":\\d+,\"type\":\"connect\",\"client_id\":\\d+\\}")){
                                     ConnectionRequestForm connectionRequestForm = new ConnectionRequestForm();
                                     connectionRequestForm = objectMapper.readValue(line, ConnectionRequestForm.class);
@@ -191,12 +204,12 @@ public class Server implements Runnable{
                                     netcat.send(connectionValid+"\n");
                                     logger.trace("Server client {} Connection valid ", connectionRequestForm.getClient_id());
                                 }
+
+                                // message request 처리
                                 if(line.matches("\\{\"id\":\\d+,\"type\":\"\\w+\",\"target_id\":\\d+,\"message\":\"\\w+\"\\}")){
-                                    // RequestForm 파싱해서 받기
                                     MessageRequestForm messageRequest = new MessageRequestForm();
                                     messageRequest = objectMapper.readValue(line, MessageRequestForm.class);
 
-                                    // ResponseForm 파싱해서 보내기
                                     long target_id = messageRequest.getTarget_id();
                                     Netcat targetNetcat = clientRepository.findById(target_id);
                                     MessageResponseForm messageResponse = new MessageResponseForm(messageRequest.getId(), messageRequest.getMessage());
@@ -206,6 +219,8 @@ public class Server implements Runnable{
                                     }
                                     logger.trace("Server sends message response to client {}", messageRequest.getTarget_id());
                                 }
+                                
+                                // client_list 처리
                                 if(line.matches("\\{\"id\":\\d+,\"type\":\"client_list\"\\}")){
                                     ClientListRequestForm listRequestForm = objectMapper.readValue(line, ClientListRequestForm.class);
                                     
@@ -231,8 +246,8 @@ public class Server implements Runnable{
                 }
             }
         });
-        userInputHandler.start();
-        clientInputHandler.start();
+        userInputController.start();
+        clientInputController.start();
 
         try(ServerSocket serverSocket = new ServerSocket(getPort());) {
             while(!Thread.currentThread().isInterrupted()){

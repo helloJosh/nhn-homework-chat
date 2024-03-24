@@ -4,8 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
-import java.time.LocalDateTime;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,17 +11,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.form.ClientListRequestForm;
 import com.nhnacademy.form.ClientListResponseForm;
-import com.nhnacademy.form.ConfigurationForm;
 import com.nhnacademy.form.ConnectionRequestForm;
 import com.nhnacademy.form.ConnectionValidForm;
 import com.nhnacademy.form.MessageRequestForm;
 import com.nhnacademy.form.MessageResponseForm;
 import com.nhnacademy.repository.ClientRepository;
-import com.nhnacademy.util.JsonFileUtility;
 import com.nhnacademy.util.Netcat;
 
 public class Client implements Runnable{
-    //private Socket socket;
     private String host;
     private int port;
     private long client_id;
@@ -72,11 +67,12 @@ public class Client implements Runnable{
             String connectRequestLine = objectMapper.writeValueAsString(connectionRequestForm);
             netcat.send(connectRequestLine+"\n");
 
-            Thread userInputHandler = new Thread(()->{
+            Thread userInputController = new Thread(()->{
                 try{
                     BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
                     String line;
                     while((line=input.readLine())!=null){
+                        // 명령어 /r traget_id message 처리
                         if(line.matches("/r\\s+\\d+\\s+.+")){
                             String[] words = line.split(" ");
                             String target_id = words[1];
@@ -96,6 +92,7 @@ public class Client implements Runnable{
                             logger.trace("client message request");
                                                                     
                         }
+                        // 명령어 client_list 처리
                         if(line.equals("client_list")){
                             ClientListRequestForm clientListRequest = new ClientListRequestForm(getMessage_id());
                             String listRequest = objectMapper.writeValueAsString(clientListRequest);
@@ -112,7 +109,7 @@ public class Client implements Runnable{
                 }
             });
 
-            Thread serverInputHandler = new Thread(()->{
+            Thread serverInputController = new Thread(()->{
                 while(!Thread.currentThread().isInterrupted()){
                     if(!netcat.isReceiveQueueEmpty()){
                         try{
@@ -151,8 +148,8 @@ public class Client implements Runnable{
                     }
                 }
             });
-            userInputHandler.start();
-            serverInputHandler.start();
+            userInputController.start();
+            serverInputController.start();
             thread.join();
         } catch (IOException e) {
             System.err.println(e.getMessage());
