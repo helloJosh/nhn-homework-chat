@@ -167,7 +167,7 @@ public class Server implements Runnable{
                                         boolean flag = true;
                                         for(long l : clientIdList){
                                             if(l == connectionRequestForm.getClient_id()){
-                                                netcat.send("Existing Client Id please connect again, Connection will be closed"+"\n");
+                                                netcat.send("Duplicated Client Id please connect again, Connection will be closed"+"\n");
                                                 Thread.sleep(50);
                                                 netcat.closeSocket();
                                                 flag = false;
@@ -219,7 +219,7 @@ public class Server implements Runnable{
                                     }
                                     logger.trace("Server sends message response to client {}", messageRequest.getTarget_id());
                                 }
-                                
+
                                 // client_list 처리
                                 if(line.matches("\\{\"id\":\\d+,\"type\":\"client_list\"\\}")){
                                     ClientListRequestForm listRequestForm = objectMapper.readValue(line, ClientListRequestForm.class);

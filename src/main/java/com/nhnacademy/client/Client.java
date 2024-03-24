@@ -22,7 +22,7 @@ public class Client implements Runnable{
     private String host;
     private int port;
     private long client_id;
-    private long message_id=client_id;
+    private long message_id=1;
     ClientRepository clientRepository = new ClientRepository();
     StringBuilder resultBuilder = new StringBuilder();
     ObjectMapper objectMapper = new ObjectMapper();
@@ -99,9 +99,6 @@ public class Client implements Runnable{
                             netcat.send(listRequest+"\n");
                             System.out.println(listRequest);
                             logger.trace("Client request list call ");
-                        }
-                        else{
-                            netcat.send(line+"\n");
                         }
                     }
                 } catch (IOException e){

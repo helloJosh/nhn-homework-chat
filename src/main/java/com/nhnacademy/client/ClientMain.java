@@ -23,6 +23,7 @@ public class ClientMain {
 
         CommandLineParser parser = new DefaultParser();
         try {
+            // -H localhost -p 1234 -i 123
             CommandLine cmd = parser.parse(options, args);
             if(cmd.hasOption("H")){
                 host = cmd.getOptionValue("H");
