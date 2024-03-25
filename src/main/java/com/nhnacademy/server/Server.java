@@ -165,6 +165,7 @@ public class Server implements Runnable{
                                     connectionRequestForm = objectMapper.readValue(line, ConnectionRequestForm.class);
                                     synchronized(clientIdList){
                                         boolean flag = true;
+                                        // Client Id 중복 처리
                                         for(long l : clientIdList){
                                             if(l == connectionRequestForm.getClient_id()){
                                                 netcat.send("Duplicated Client Id please connect again, Connection will be closed"+"\n");
@@ -178,6 +179,7 @@ public class Server implements Runnable{
 
                                             }
                                         }
+                                        // 접속 차단 Id 처리
                                         for(long l : denyClientIdList){
                                             if(l == connectionRequestForm.getClient_id()){
                                                 netcat.send("You shall not pass!!!, Connection will be closed"+"\n");

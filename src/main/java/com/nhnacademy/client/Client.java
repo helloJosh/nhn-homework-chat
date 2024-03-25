@@ -73,13 +73,14 @@ public class Client implements Runnable{
                     String line;
                     while((line=input.readLine())!=null){
                         // 명령어 /r traget_id message 처리
+                        // 
                         if(line.matches("/r\\s+\\d+\\s+.+")){
                             String[] words = line.split(" ");
                             String target_id = words[1];
                             for (int i = 2; i < words.length; i++) {
                                 resultBuilder.append(words[i]);
                                 if (i < words.length - 1) {
-                                    resultBuilder.append(" "); // 마지막 단어를 제외한 나머지 단어 사이에 공백을 추가합니다.
+                                    resultBuilder.append(" ");
                                 }
                             }
                             String message = resultBuilder.toString();
